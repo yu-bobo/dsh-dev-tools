@@ -1,0 +1,4 @@
+# dsh-dev-tools bundle patch
+- insert:
+    - id: dev-tools
+      name: dsh-dev-tools
