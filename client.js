@@ -64,7 +64,8 @@ window.__ModuleLoader__.load({
       { id: 'jwt', mark: 'JWT', tone: 'orange', zh: 'JWT', en: 'JWT', descZh: '解码（不验签）', descEn: 'Decode (no verify)' },
       { id: 'text-case', mark: 'Aa', tone: 'green', zh: '命名风格', en: 'Case', descZh: 'camel / snake / kebab…', descEn: 'camel / snake / kebab…' },
       { id: 'number-base', mark: '2ⁿ', tone: 'cyan', zh: '进制', en: 'Base', descZh: '2–36 进制互转', descEn: 'Base 2–36 convert' },
-      { id: 'query-string', mark: '?=', tone: 'lime', zh: 'Query', en: 'Query', descZh: 'Query ↔ JSON', descEn: 'Query ↔ JSON' }
+      { id: 'query-string', mark: '?=', tone: 'lime', zh: 'Query', en: 'Query', descZh: 'Query ↔ JSON', descEn: 'Query ↔ JSON' },
+      { id: 'diff', mark: '≠', tone: 'fuchsia', zh: '文本 Diff', en: 'Diff', descZh: '左右对比 / 选文件', descEn: 'Side-by-side / pick files' }
     ]
 
     const DEFAULT_PINS = ['json', 'timestamp', 'uuid', 'base64', 'hash']
@@ -120,7 +121,21 @@ window.__ModuleLoader__.load({
         chars: '{n} chars',
         swap: 'Swap I/O',
         hintManage: 'Pin daily tools, then drag chips to set tab order.',
-        statusReady: 'Ready'
+        statusReady: 'Ready',
+        original: 'Original',
+        modified: 'Modified',
+        pickFile: 'File',
+        readingFile: 'Reading…',
+        swapAB: 'Swap',
+        identical: 'Texts are identical',
+        ignoreWs: 'Ignore trailing WS',
+        expandN: 'Expand {n} lines',
+        copyUnified: 'Copy unified',
+        compare: 'Compare',
+        diffEmpty: 'Paste or open two texts to see the diff',
+        diffStats: '+{a} / −{r}',
+        clearFile: 'Clear file',
+        largeDiffHint: 'Large input — click Compare to refresh'
       },
       zh: {
         panelLabel: '开发工具',
@@ -172,7 +187,21 @@ window.__ModuleLoader__.load({
         chars: '{n} 字符',
         swap: '交换输入输出',
         hintManage: '固定常用工具后，拖拽芯片即可调整顶栏 Tab 顺序。',
-        statusReady: '就绪'
+        statusReady: '就绪',
+        original: '原文',
+        modified: '对比',
+        pickFile: '选文件',
+        readingFile: '读取中…',
+        swapAB: '交换',
+        identical: '两侧文本完全相同',
+        ignoreWs: '忽略行尾空白',
+        expandN: '展开 {n} 行',
+        copyUnified: '复制 Unified',
+        compare: '对比',
+        diffEmpty: '粘贴或选择两个文件以查看差异',
+        diffStats: '+{a} / −{r}',
+        clearFile: '清除文件名',
+        largeDiffHint: '文本较大，请点击「对比」刷新'
       }
     }
 
@@ -343,6 +372,7 @@ window.__ModuleLoader__.load({
       .dsh-dt-mark[data-tone="green"] { color: #15803d; background: color-mix(in srgb, #22c55e 14%, transparent); border-color: color-mix(in srgb, #22c55e 28%, transparent); }
       .dsh-dt-mark[data-tone="cyan"] { color: #0e7490; background: color-mix(in srgb, #06b6d4 14%, transparent); border-color: color-mix(in srgb, #06b6d4 28%, transparent); }
       .dsh-dt-mark[data-tone="lime"] { color: #4d7c0f; background: color-mix(in srgb, #84cc16 14%, transparent); border-color: color-mix(in srgb, #84cc16 28%, transparent); }
+      .dsh-dt-mark[data-tone="fuchsia"] { color: #a21caf; background: color-mix(in srgb, #d946ef 14%, transparent); border-color: color-mix(in srgb, #d946ef 28%, transparent); }
       .dsh-dt-root[data-scheme="dark"] .dsh-dt-mark { filter: saturate(1.05) brightness(1.15); }
       .dsh-dt-hero-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
       .dsh-dt-hero-title {
@@ -842,6 +872,232 @@ window.__ModuleLoader__.load({
         color: var(--dsw-alias-label-secondary);
         text-align: center;
       }
+
+      /* Diff tool */
+      .dsh-dt-diff-layout {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .dsh-dt-diff-editors {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        flex: 0 0 auto;
+        min-height: 160px;
+        max-height: 38%;
+      }
+      @media (max-width: 760px) {
+        .dsh-dt-diff-editors { grid-template-columns: 1fr; max-height: none; }
+      }
+      .dsh-dt-diff-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+        padding: 10px;
+        border: 1px solid var(--dsh-dt-border);
+        border-radius: var(--dsh-dt-radius);
+        background: var(--dsw-alias-bg-layer-1, var(--dsw-alias-bg-base));
+      }
+      .dsh-dt-diff-pane .dsh-dt-textarea {
+        min-height: 120px;
+        max-height: 220px;
+        resize: vertical;
+      }
+      .dsh-dt-filechip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        max-width: 140px;
+        height: 22px;
+        padding: 0 6px 0 8px;
+        border-radius: 999px;
+        border: 1px solid var(--dsh-dt-border);
+        background: var(--dsh-dt-soft);
+        font-size: 11px;
+        color: var(--dsw-alias-label-secondary);
+        overflow: hidden;
+      }
+      .dsh-dt-filechip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .dsh-dt-filechip button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 12px;
+        line-height: 1;
+        opacity: 0.7;
+      }
+      .dsh-dt-filechip button:hover { opacity: 1; }
+      .dsh-dt-diff-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .dsh-dt-diff-stats {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--dsh-dt-mono);
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .dsh-dt-diff-stats [data-k="add"] { color: #15803d; }
+      .dsh-dt-diff-stats [data-k="del"] { color: #be123c; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-stats [data-k="add"] { color: #86efac; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-stats [data-k="del"] { color: #fda4af; }
+      .dsh-dt-diff-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--dsw-alias-label-secondary);
+        user-select: none;
+        cursor: pointer;
+      }
+      .dsh-dt-diff-toggle input { accent-color: var(--dsw-alias-brand-primary); }
+      .dsh-dt-diff-view {
+        flex: 1;
+        min-height: 180px;
+        overflow: auto;
+        border: 1px solid var(--dsh-dt-border);
+        border-radius: var(--dsh-dt-radius);
+        background: var(--dsw-alias-bg-layer-1, var(--dsw-alias-bg-base));
+        font-family: var(--dsh-dt-mono);
+        font-size: 12px;
+        line-height: 1.55;
+        animation: dsh-dt-diff-in .22s var(--dsh-dt-ease);
+      }
+      @keyframes dsh-dt-diff-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: none; }
+      }
+      .dsh-dt-diff-empty {
+        display: grid;
+        place-items: center;
+        min-height: 160px;
+        padding: 24px;
+        color: var(--dsw-alias-label-secondary);
+        text-align: center;
+        gap: 8px;
+      }
+      .dsh-dt-diff-empty-mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: #a21caf;
+        background: color-mix(in srgb, #d946ef 12%, transparent);
+        border: 1px solid color-mix(in srgb, #d946ef 26%, transparent);
+        margin: 0 auto 4px;
+      }
+      .dsh-dt-diff-identical {
+        display: grid;
+        place-items: center;
+        min-height: 140px;
+        padding: 24px;
+        color: #15803d;
+        font-weight: 600;
+        background: color-mix(in srgb, #22c55e 8%, transparent);
+      }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-identical {
+        color: #86efac;
+        background: color-mix(in srgb, #22c55e 12%, transparent);
+      }
+      .dsh-dt-diff-row {
+        display: grid;
+        grid-template-columns: 44px 44px 18px 1fr;
+        gap: 0;
+        min-height: 20px;
+        border-left: 3px solid transparent;
+        padding-right: 10px;
+      }
+      .dsh-dt-diff-row[data-type="del"] {
+        background: color-mix(in srgb, #f43f5e 10%, transparent);
+        border-left-color: color-mix(in srgb, #f43f5e 70%, transparent);
+      }
+      .dsh-dt-diff-row[data-type="add"] {
+        background: color-mix(in srgb, #22c55e 10%, transparent);
+        border-left-color: color-mix(in srgb, #22c55e 70%, transparent);
+      }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="del"] {
+        background: color-mix(in srgb, #f43f5e 16%, transparent);
+      }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="add"] {
+        background: color-mix(in srgb, #22c55e 14%, transparent);
+      }
+      .dsh-dt-diff-gutter {
+        text-align: right;
+        padding: 0 8px;
+        color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
+        user-select: none;
+        font-variant-numeric: tabular-nums;
+      }
+      .dsh-dt-diff-row[data-type="del"] .dsh-dt-diff-gutter[data-side="a"],
+      .dsh-dt-diff-row[data-type="add"] .dsh-dt-diff-gutter[data-side="b"] {
+        font-weight: 650;
+        color: inherit;
+      }
+      .dsh-dt-diff-row[data-type="del"] .dsh-dt-diff-gutter[data-side="a"] { color: #be123c; }
+      .dsh-dt-diff-row[data-type="add"] .dsh-dt-diff-gutter[data-side="b"] { color: #15803d; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="del"] .dsh-dt-diff-gutter[data-side="a"] { color: #fda4af; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="add"] .dsh-dt-diff-gutter[data-side="b"] { color: #86efac; }
+      .dsh-dt-diff-sign {
+        text-align: center;
+        user-select: none;
+        font-weight: 650;
+      }
+      .dsh-dt-diff-row[data-type="del"] .dsh-dt-diff-sign { color: #be123c; }
+      .dsh-dt-diff-row[data-type="add"] .dsh-dt-diff-sign { color: #15803d; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="del"] .dsh-dt-diff-sign { color: #fda4af; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-diff-row[data-type="add"] .dsh-dt-diff-sign { color: #86efac; }
+      .dsh-dt-diff-text {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        padding: 0 4px;
+        min-width: 0;
+      }
+      .dsh-dt-diff-fold {
+        appearance: none;
+        width: 100%;
+        border: 0;
+        border-top: 1px dashed var(--dsh-dt-border);
+        border-bottom: 1px dashed var(--dsh-dt-border);
+        background: var(--dsh-dt-soft);
+        color: var(--dsw-alias-label-secondary);
+        font-size: 11.5px;
+        font-family: inherit;
+        padding: 6px 12px;
+        cursor: pointer;
+        text-align: center;
+        transition: background .14s var(--dsh-dt-ease), color .14s var(--dsh-dt-ease);
+      }
+      .dsh-dt-diff-fold:hover {
+        background: var(--dsh-dt-soft-2);
+        color: var(--dsw-alias-label-primary);
+      }
+      .dsh-dt-hidden-file {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
     `
 
     function isToolId(id) {
@@ -1113,6 +1369,179 @@ window.__ModuleLoader__.load({
       }
       return neg ? '-' + out : out
     }
+
+    /* __DIFF_SHARED_START__ */
+// generated from src/core/diff.ts — do not edit
+"use strict";
+var __DSH_DT_DIFF__ = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // src/core/diff.ts
+  var diff_exports = {};
+  __export(diff_exports, {
+    foldDiffLines: () => foldDiffLines,
+    lineDiff: () => lineDiff,
+    toUnifiedDiff: () => toUnifiedDiff
+  });
+  function splitLines(text) {
+    if (text === "") return [];
+    return String(text).split("\n");
+  }
+  function lineDiff(aText, bText, ignoreTrailingWs = false) {
+    const norm = (s) => ignoreTrailingWs ? s.replace(/[ \t]+$/g, "") : s;
+    const a = splitLines(aText).map(norm);
+    const b = splitLines(bText).map(norm);
+    const n = a.length;
+    const m = b.length;
+    const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i2 = n - 1; i2 >= 0; i2--) {
+      for (let j2 = m - 1; j2 >= 0; j2--) {
+        if (a[i2] === b[j2]) dp[i2][j2] = dp[i2 + 1][j2 + 1] + 1;
+        else dp[i2][j2] = Math.max(dp[i2 + 1][j2], dp[i2][j2 + 1]);
+      }
+    }
+    const lines = [];
+    let i = 0;
+    let j = 0;
+    let aLine = 1;
+    let bLine = 1;
+    let added = 0;
+    let removed = 0;
+    while (i < n && j < m) {
+      if (a[i] === b[j]) {
+        lines.push({ type: "equal", text: a[i], aLine, bLine });
+        i++;
+        j++;
+        aLine++;
+        bLine++;
+      } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+        lines.push({ type: "del", text: a[i], aLine });
+        i++;
+        aLine++;
+        removed++;
+      } else {
+        lines.push({ type: "add", text: b[j], bLine });
+        j++;
+        bLine++;
+        added++;
+      }
+    }
+    while (i < n) {
+      lines.push({ type: "del", text: a[i], aLine });
+      i++;
+      aLine++;
+      removed++;
+    }
+    while (j < m) {
+      lines.push({ type: "add", text: b[j], bLine });
+      j++;
+      bLine++;
+      added++;
+    }
+    return { lines, added, removed };
+  }
+  function toUnifiedDiff(result, aName = "a", bName = "b", context = 3) {
+    if (result.added === 0 && result.removed === 0) return "identical";
+    const out = [`--- ${aName}`, `+++ ${bName}`];
+    const rows = result.lines;
+    const blocks = [];
+    let bi = 0;
+    while (bi < rows.length) {
+      while (bi < rows.length && rows[bi].type === "equal") bi++;
+      if (bi >= rows.length) break;
+      const changeStart = bi;
+      while (bi < rows.length && rows[bi].type !== "equal") bi++;
+      const start = Math.max(0, changeStart - context);
+      const end = Math.min(rows.length, bi + context);
+      if (blocks.length && start <= blocks[blocks.length - 1].end) {
+        blocks[blocks.length - 1].end = end;
+      } else {
+        blocks.push({ start, end });
+      }
+    }
+    for (const block of blocks) {
+      let aStart = 0;
+      let bStart = 0;
+      let aCount = 0;
+      let bCount = 0;
+      for (let k = block.start; k < block.end; k++) {
+        const row = rows[k];
+        if (row.type === "equal" || row.type === "del") {
+          if (!aCount) aStart = row.aLine || 1;
+          aCount++;
+        }
+        if (row.type === "equal" || row.type === "add") {
+          if (!bCount) bStart = row.bLine || 1;
+          bCount++;
+        }
+      }
+      out.push(`@@ -${aStart},${aCount} +${bStart},${bCount} @@`);
+      for (let k = block.start; k < block.end; k++) {
+        const row = rows[k];
+        if (row.type === "equal") out.push(` ${row.text}`);
+        else if (row.type === "del") out.push(`-${row.text}`);
+        else out.push(`+${row.text}`);
+      }
+    }
+    return out.join("\n");
+  }
+  function foldDiffLines(lines, context = 3, expanded = {}) {
+    const ctx = context == null ? 3 : context;
+    const exp = expanded || {};
+    const out = [];
+    let i = 0;
+    let foldId = 0;
+    while (i < lines.length) {
+      if (lines[i].type !== "equal") {
+        out.push({ kind: "line", line: lines[i] });
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < lines.length && lines[j].type === "equal") j++;
+      const len = j - i;
+      const hideable = len > ctx * 2 + 1;
+      if (!hideable) {
+        for (let k = i; k < j; k++) out.push({ kind: "line", line: lines[k] });
+      } else {
+        const id = "f" + foldId++;
+        for (let k = i; k < i + ctx; k++) out.push({ kind: "line", line: lines[k] });
+        const midStart = i + ctx;
+        const midEnd = j - ctx;
+        const midCount = midEnd - midStart;
+        if (exp[id]) {
+          for (let k = midStart; k < midEnd; k++) out.push({ kind: "line", line: lines[k] });
+        } else {
+          out.push({ kind: "fold", id, count: midCount });
+        }
+        for (let k = midEnd; k < j; k++) out.push({ kind: "line", line: lines[k] });
+      }
+      i = j;
+    }
+    return out;
+  }
+  return __toCommonJS(diff_exports);
+})();
+var lineDiff = __DSH_DT_DIFF__.lineDiff;
+var toUnifiedDiff = __DSH_DT_DIFF__.toUnifiedDiff;
+var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
+/* __DIFF_SHARED_END__ */
 
     function Btn({ primary, ghost, active, disabled, onClick, children, icon, title, iconOnly }) {
       // 统一自绘按钮，保证插件内视觉一致（不混用宿主 Button 造型）
@@ -1666,6 +2095,272 @@ window.__ModuleLoader__.load({
       })
     }
 
+    /**
+     * 文本 Diff：双栏输入/选文件，实时行级着色对比
+     */
+    function DiffTool({ t, lang, tool }) {
+      const [left, setLeft] = useState('')
+      const [right, setRight] = useState('')
+      const [leftName, setLeftName] = useState('')
+      const [rightName, setRightName] = useState('')
+      const [leftReading, setLeftReading] = useState(false)
+      const [rightReading, setRightReading] = useState(false)
+      const [ignoreWs, setIgnoreWs] = useState(false)
+      const [expanded, setExpanded] = useState({})
+      const [copied, setCopied] = useState(false)
+      // 已提交参与对比的文本快照（debounce / 手动对比后更新）
+      const [committed, setCommitted] = useState({ left: '', right: '', ignoreWs: false })
+      const leftFileRef = useRef(null)
+      const rightFileRef = useRef(null)
+      const debounceRef = useRef(null)
+
+      const lineCount = (text) => (text === '' ? 0 : text.split('\n').length)
+      const isLarge = lineCount(left) > 2000 || lineCount(right) > 2000
+
+      const commitDiff = useCallback((nextLeft, nextRight, nextIgnore) => {
+        setCommitted({
+          left: nextLeft,
+          right: nextRight,
+          ignoreWs: !!nextIgnore
+        })
+        setExpanded({})
+      }, [])
+
+      useEffect(() => {
+        // 大文本加长 debounce，避免 LCS 卡顿
+        const delay = isLarge ? 280 : 120
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          commitDiff(left, right, ignoreWs)
+        }, delay)
+        return () => {
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+        }
+      }, [left, right, ignoreWs, isLarge, commitDiff])
+
+      const result = useMemo(
+        () => lineDiff(committed.left, committed.right, committed.ignoreWs),
+        [committed]
+      )
+
+      const folded = useMemo(
+        () => foldDiffLines(result.lines, 3, expanded),
+        [result, expanded]
+      )
+
+      const editorsEmpty = left === '' && right === ''
+      const bothEmpty = committed.left === '' && committed.right === ''
+      const identical = !bothEmpty && result.added === 0 && result.removed === 0
+      const pending = left !== committed.left || right !== committed.right || ignoreWs !== committed.ignoreWs
+
+      const status = bothEmpty
+        ? t('statusReady')
+        : identical
+          ? t('identical')
+          : t('diffStats').replace('{a}', String(result.added)).replace('{r}', String(result.removed))
+
+      const readFile = (side, file) => {
+        if (!file) return
+        const setReading = side === 'a' ? setLeftReading : setRightReading
+        const setText = side === 'a' ? setLeft : setRight
+        const setName = side === 'a' ? setLeftName : setRightName
+        setReading(true)
+        setName(file.name)
+        const reader = new FileReader()
+        reader.onload = () => {
+          const text = String(reader.result == null ? '' : reader.result)
+          setText(text)
+          setReading(false)
+          const other = side === 'a' ? right : left
+          const nextLeft = side === 'a' ? text : other
+          const nextRight = side === 'a' ? other : text
+          // 大文件或选文件后立刻提交，避免等待 debounce
+          if (lineCount(nextLeft) > 2000 || lineCount(nextRight) > 2000) {
+            commitDiff(nextLeft, nextRight, ignoreWs)
+          }
+        }
+        reader.onerror = () => {
+          setReading(false)
+        }
+        reader.readAsText(file, 'UTF-8')
+      }
+
+      const swap = () => {
+        setLeft(right)
+        setRight(left)
+        setLeftName(rightName)
+        setRightName(leftName)
+        if (isLarge) commitDiff(right, left, ignoreWs)
+      }
+
+      const clearAll = () => {
+        setLeft('')
+        setRight('')
+        setLeftName('')
+        setRightName('')
+        commitDiff('', '', ignoreWs)
+      }
+
+      const copyUnified = async () => {
+        const text = toUnifiedDiff(result, leftName || 'a', rightName || 'b')
+        try {
+          await navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1200)
+        } catch { /* ignore */ }
+      }
+
+      const renderPane = (side) => {
+        const isA = side === 'a'
+        const value = isA ? left : right
+        const setValue = isA ? setLeft : setRight
+        const name = isA ? leftName : rightName
+        const setName = isA ? setLeftName : setRightName
+        const reading = isA ? leftReading : rightReading
+        const fileRef = isA ? leftFileRef : rightFileRef
+        const label = isA ? t('original') : t('modified')
+        return h('div', { className: 'dsh-dt-diff-pane' },
+          h('div', { className: 'dsh-dt-pane-head' },
+            h('div', { className: 'dsh-dt-row', style: { gap: 8, minWidth: 0 } },
+              h('div', { className: 'dsh-dt-label' }, label),
+              name
+                ? h('div', { className: 'dsh-dt-filechip', title: name },
+                    h('span', null, name),
+                    h('button', {
+                      type: 'button',
+                      'aria-label': t('clearFile'),
+                      'data-tip': t('clearFile'),
+                      onClick: () => setName('')
+                    }, '×')
+                  )
+                : null
+            ),
+            h('div', { className: 'dsh-dt-actions' },
+              h('span', { className: 'dsh-dt-meta' }, t('chars').replace('{n}', String(value.length))),
+              h('input', {
+                ref: fileRef,
+                className: 'dsh-dt-hidden-file',
+                type: 'file',
+                accept: '.txt,.md,.json,.js,.ts,.tsx,.jsx,.css,.html,.xml,.yaml,.yml,.csv,.log,.tsv,text/*',
+                onChange: (e) => {
+                  const f = e.target.files && e.target.files[0]
+                  readFile(side, f)
+                  e.target.value = ''
+                }
+              }),
+              h(Btn, {
+                ghost: true,
+                disabled: reading,
+                onClick: () => fileRef.current && fileRef.current.click()
+              }, reading ? t('readingFile') : t('pickFile')),
+              h(Btn, {
+                ghost: true,
+                onClick: () => { setValue(''); setName('') }
+              }, t('clear'))
+            )
+          ),
+          h('textarea', {
+            className: 'dsh-dt-textarea',
+            value,
+            onChange: (e) => setValue(e.target.value),
+            spellCheck: false,
+            placeholder: '…'
+          })
+        )
+      }
+
+      const viewBody = editorsEmpty
+        ? h('div', { className: 'dsh-dt-diff-empty' },
+            h('div', { className: 'dsh-dt-diff-empty-mark' }, '≠'),
+            h('div', null, t('diffEmpty'))
+          )
+        : bothEmpty && pending
+          ? h('div', { className: 'dsh-dt-diff-empty' },
+              h('div', { className: 'dsh-dt-diff-empty-mark' }, '≠'),
+              h('div', null, isLarge ? t('largeDiffHint') : t('statusReady'))
+            )
+          : identical
+          ? h('div', { className: 'dsh-dt-diff-identical' }, t('identical'))
+          : folded.map((item, idx) => {
+              if (item.kind === 'fold') {
+                return h('button', {
+                  key: 'fold-' + item.id + '-' + idx,
+                  type: 'button',
+                  className: 'dsh-dt-diff-fold',
+                  onClick: () => setExpanded((prev) => Object.assign({}, prev, { [item.id]: true }))
+                }, t('expandN').replace('{n}', String(item.count)))
+              }
+              const line = item.line
+              const sign = line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' '
+              return h('div', {
+                key: 'row-' + idx,
+                className: 'dsh-dt-diff-row',
+                'data-type': line.type
+              },
+                h('div', { className: 'dsh-dt-diff-gutter', 'data-side': 'a' },
+                  line.aLine != null ? String(line.aLine) : ''),
+                h('div', { className: 'dsh-dt-diff-gutter', 'data-side': 'b' },
+                  line.bLine != null ? String(line.bLine) : ''),
+                h('div', { className: 'dsh-dt-diff-sign' }, sign),
+                h('div', { className: 'dsh-dt-diff-text' }, line.text === '' ? ' ' : line.text)
+              )
+            })
+
+      return h(ToolShell, {
+        tool, lang, t,
+        status: pending ? t('statusReady') : status,
+        actions: [
+          h(Btn, {
+            primary: true,
+            key: 'cmp',
+            onClick: () => commitDiff(left, right, ignoreWs)
+          }, t('compare')),
+          h(Btn, { key: 'swap', onClick: swap }, t('swapAB')),
+          h(Btn, { key: 'clear', onClick: clearAll }, t('clear')),
+          h(Btn, {
+            key: 'copy',
+            ghost: true,
+            disabled: bothEmpty,
+            icon: IconCopy ? h(IconCopy) : null,
+            onClick: copyUnified
+          }, copied ? t('copied') : t('copyUnified'))
+        ],
+        extras: h('div', { className: 'dsh-dt-row' },
+          h('label', { className: 'dsh-dt-diff-toggle' },
+            h('input', {
+              type: 'checkbox',
+              checked: ignoreWs,
+              onChange: (e) => {
+                const next = !!e.target.checked
+                setIgnoreWs(next)
+                if (isLarge) commitDiff(left, right, next)
+              }
+            }),
+            t('ignoreWs')
+          ),
+          !bothEmpty && !identical
+            ? h('span', { className: 'dsh-dt-diff-stats' },
+                h('span', { 'data-k': 'add' }, '+' + result.added),
+                h('span', { 'data-k': 'del' }, '−' + result.removed)
+              )
+            : null,
+          isLarge
+            ? h('span', { className: 'dsh-dt-meta' }, t('largeDiffHint'))
+            : null
+        ),
+        children: h('div', { className: 'dsh-dt-diff-layout' },
+          h('div', { className: 'dsh-dt-diff-editors' },
+            renderPane('a'),
+            renderPane('b')
+          ),
+          h('div', {
+            className: 'dsh-dt-diff-view',
+            key: 'diff-' + committed.left.length + '-' + committed.right.length + '-' + result.added + '-' + result.removed + '-' + (identical ? 'same' : 'chg')
+          }, viewBody)
+        )
+      })
+    }
+
     function ManagePage({ t, lang, pinned, setPinned, openTool, togglePin }) {
       const labelOf = (tool) => (lang === 'zh' ? tool.zh : tool.en)
       const descOf = (tool) => (lang === 'zh' ? tool.descZh : tool.descEn)
@@ -1859,6 +2554,7 @@ window.__ModuleLoader__.load({
       if (id === 'text-case') return h(CaseTool, common)
       if (id === 'number-base') return h(NumberBaseTool, common)
       if (id === 'query-string') return h(QueryTool, common)
+      if (id === 'diff') return h(DiffTool, common)
       return h('div', { className: 'dsh-dt-muted' }, 'Unknown tool')
     }
 

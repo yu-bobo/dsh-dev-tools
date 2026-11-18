@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+import { lineDiff, toUnifiedDiff } from './diff.js'
 
 export type ToolId =
   | 'json'
@@ -14,6 +15,7 @@ export type ToolId =
   | 'text-case'
   | 'number-base'
   | 'query-string'
+  | 'diff'
 
 export const TOOL_CATALOG: Array<{
   id: ToolId
@@ -79,6 +81,11 @@ export const TOOL_CATALOG: Array<{
     id: 'query-string',
     actions: ['parse', 'stringify'],
     summary: 'Query string ↔ JSON object'
+  },
+  {
+    id: 'diff',
+    actions: ['compare'],
+    summary: 'Line-based text diff (unified)'
   }
 ]
 
@@ -86,6 +93,7 @@ export interface RunArgs {
   tool: ToolId | string
   action: string
   input?: string
+  inputB?: string
   key?: string
   count?: number
   unit?: 's' | 'ms'
@@ -362,6 +370,11 @@ export function runTool(args: RunArgs): string {
         }
       }
       return parts.join('&')
+    }
+    case 'diff': {
+      const left = input == null ? '' : String(input)
+      const right = args.inputB == null ? '' : String(args.inputB)
+      return toUnifiedDiff(lineDiff(left, right))
     }
   }
   throw new Error(`unhandled ${tool}/${action}`)

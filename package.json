@@ -1,7 +1,7 @@
 {
   "name": "dsh-dev-tools",
-  "version": "0.1.0",
-  "description": "DeepSeek Harness plugin: developer utilities (JSON, timestamp, UUID, hash, AES, Base64…) with pinable sidebar tabs and agent tools.",
+  "version": "0.1.1",
+  "description": "DeepSeek Harness plugin: developer utilities (JSON, timestamp, UUID, hash, AES, Base64, Diff…) with pinable sidebar tabs and agent tools.",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -62,7 +62,8 @@
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node scripts/embed-diff.mjs",
+    "embed-diff": "node scripts/embed-diff.mjs",
     "prepare": "npm run build",
     "prepack": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -85,6 +86,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.0",
+    "esbuild": "^0.25.0",
     "tsdown": "^0.22.2",
     "typescript": "^5.9.0"
   }

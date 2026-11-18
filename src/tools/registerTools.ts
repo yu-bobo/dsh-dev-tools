@@ -30,7 +30,7 @@ export function registerTools(ctx: Context): void {
     defineTool({
       name: 'devtools_run',
       description:
-        '运行 dsh-dev-tools 中的某个开发者工具。tool + action 见 devtools_list；常见：json/format、timestamp/now、uuid/v4、base64/encode、hash/sha256、aes/encrypt。',
+        '运行 dsh-dev-tools 中的某个开发者工具。tool + action 见 devtools_list；常见：json/format、timestamp/now、uuid/v4、base64/encode、hash/sha256、aes/encrypt、diff/compare。',
       parameters: {
         tool: {
           type: 'string',
@@ -42,7 +42,8 @@ export function registerTools(ctx: Context): void {
           required: true,
           description: '动作名，见对应工具的 actions'
         },
-        input: { type: 'string', description: '输入文本（多数动作需要）' },
+        input: { type: 'string', description: '输入文本（多数动作需要；diff 为左侧原文）' },
+        inputB: { type: 'string', description: 'diff 右侧对比文本' },
         key: { type: 'string', description: '密钥/口令（hash hmac、aes 需要）' },
         count: { type: 'number', description: 'uuid 批量数量，1–100' },
         unit: { type: 'string', description: 'timestamp 单位：s | ms' },
@@ -59,6 +60,7 @@ export function registerTools(ctx: Context): void {
             tool: String(args.tool || '') as ToolId,
             action: String(args.action || ''),
             input: args.input == null ? undefined : String(args.input),
+            inputB: args.inputB == null ? undefined : String(args.inputB),
             key: args.key == null ? undefined : String(args.key),
             count: args.count == null ? undefined : Number(args.count),
             unit: args.unit === 'ms' ? 'ms' : args.unit === 's' ? 's' : undefined,

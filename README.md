@@ -28,7 +28,7 @@ dsh plugin --profile desktop add dsh-dev-tools
 - 默认 Pin：JSON、时间戳、UUID、Base64、Hash
 - 偏好保存在浏览器 `localStorage`
 
-内置工具：JSON、时间戳、UUID、Base64、URL、Hash、AES-GCM、Hex、JWT 解码、命名风格、进制转换、Query String。
+内置工具：JSON、时间戳、UUID、Base64、URL、Hash、AES-GCM、Hex、JWT 解码、命名风格、进制转换、Query String、文本 Diff。
 
 ### Agent 工具
 
@@ -43,6 +43,7 @@ dsh plugin --profile desktop add dsh-dev-tools
 devtools_run({ tool: "uuid", action: "v4", count: 3 })
 devtools_run({ tool: "hash", action: "sha256", input: "hello" })
 devtools_run({ tool: "timestamp", action: "now" })
+devtools_run({ tool: "diff", action: "compare", input: "a\\nb", inputB: "a\\nc" })
 ```
 
 AES 使用 PBKDF2 + AES-256-GCM，口令仅用于当场加解密，不会上传。
@@ -57,6 +58,7 @@ npm run dev   # watch host bundle
 
 - 宿主逻辑：`src/` → `lib/`（tsdown）
 - 浏览器 UI：手写 `client.js`（`window.__ModuleLoader__`）
+- Diff 算法唯一源：`src/core/diff.ts`（宿主直接引用；`npm run build` 时嵌入侧栏）
 
 ## License
 
