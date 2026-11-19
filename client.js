@@ -1,6 +1,6 @@
 /**
  * Dev Tools browser UI: pinable tool tabs + manage panel.
- * Pure client-side transforms (Web Crypto / built-ins).
+ * Local transforms run in the page. Translation posts to the host model route.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-dev-tools',
@@ -65,7 +65,8 @@ window.__ModuleLoader__.load({
       { id: 'text-case', mark: 'Aa', tone: 'green', zh: '命名风格', en: 'Case', descZh: 'camel / snake / kebab…', descEn: 'camel / snake / kebab…' },
       { id: 'number-base', mark: '2ⁿ', tone: 'cyan', zh: '进制', en: 'Base', descZh: '2–36 进制互转', descEn: 'Base 2–36 convert' },
       { id: 'query-string', mark: '?=', tone: 'lime', zh: 'Query', en: 'Query', descZh: 'Query ↔ JSON', descEn: 'Query ↔ JSON' },
-      { id: 'diff', mark: '≠', tone: 'fuchsia', zh: '文本 Diff', en: 'Diff', descZh: '左右对比 / 选文件', descEn: 'Side-by-side / pick files' }
+      { id: 'diff', mark: '≠', tone: 'fuchsia', zh: '文本 Diff', en: 'Diff', descZh: '左右对比 / 选文件', descEn: 'Side-by-side / pick files' },
+      { id: 'translate', mark: 'Tr', tone: 'sky', zh: '翻译', en: 'Translate', descZh: '用当前模型翻译', descEn: 'Translate with the current model' }
     ]
 
     const DEFAULT_PINS = ['json', 'timestamp', 'uuid', 'base64', 'hash']
@@ -135,7 +136,15 @@ window.__ModuleLoader__.load({
         diffEmpty: 'Paste or open two texts to see the diff',
         diffStats: '+{a} / −{r}',
         clearFile: 'Clear file',
-        largeDiffHint: 'Large input — click Compare to refresh'
+        largeDiffHint: 'Large input — click Compare to refresh',
+        translate: 'Translate',
+        translating: 'Translating…',
+        cancel: 'Cancel',
+        translateCancelled: 'Cancelled',
+        targetLang: 'Target language',
+        sourceLang: 'Source (optional)',
+        customLang: 'Custom',
+        targetRequired: 'Enter a target language'
       },
       zh: {
         panelLabel: '开发工具',
@@ -201,7 +210,15 @@ window.__ModuleLoader__.load({
         diffEmpty: '粘贴或选择两个文件以查看差异',
         diffStats: '+{a} / −{r}',
         clearFile: '清除文件名',
-        largeDiffHint: '文本较大，请点击「对比」刷新'
+        largeDiffHint: '文本较大，请点击「对比」刷新',
+        translate: '翻译',
+        translating: '翻译中…',
+        cancel: '取消',
+        translateCancelled: '已取消',
+        targetLang: '目标语言',
+        sourceLang: '源语言（可选）',
+        customLang: '自定义',
+        targetRequired: '请填写目标语言'
       }
     }
 
@@ -326,6 +343,13 @@ window.__ModuleLoader__.load({
         flex-direction: column;
         gap: 12px;
       }
+      .dsh-dt-keep {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .dsh-dt-keep[hidden] { display: none; }
       .dsh-dt-stage {
         flex: 1;
         min-height: 0;
@@ -2538,6 +2562,129 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       )
     }
 
+    const TARGET_LANGS = [
+      { value: 'zh', label: '简体中文' },
+      { value: 'zh-Hant', label: '繁體中文' },
+      { value: 'en', label: 'English' },
+      { value: 'ja', label: '日本語' },
+      { value: 'ko', label: '한국어' },
+      { value: 'fr', label: 'Français' },
+      { value: 'de', label: 'Deutsch' },
+      { value: 'es', label: 'Español' },
+      { value: 'pt', label: 'Português' },
+      { value: 'it', label: 'Italiano' },
+      { value: 'ru', label: 'Русский' },
+      { value: 'ar', label: 'العربية' },
+      { value: 'hi', label: 'हिन्दी' },
+      { value: 'th', label: 'ไทย' },
+      { value: 'vi', label: 'Tiếng Việt' },
+      { value: 'id', label: 'Bahasa Indonesia' },
+      { value: 'ms', label: 'Bahasa Melayu' },
+      { value: 'tr', label: 'Türkçe' },
+      { value: 'pl', label: 'Polski' },
+      { value: 'nl', label: 'Nederlands' },
+      { value: 'uk', label: 'Українська' },
+      { value: 'sv', label: 'Svenska' },
+      { value: 'cs', label: 'Čeština' },
+      { value: 'el', label: 'Ελληνικά' },
+      { value: 'he', label: 'עברית' },
+      { value: 'fa', label: 'فارسی' }
+    ]
+
+    /**
+     * 用宿主模型翻译文本
+     */
+    function TranslateTool({ t, lang, tool }) {
+      const s = useToolState()
+      const [target, setTarget] = useState(lang === 'en' ? 'zh' : 'en')
+      const [customTarget, setCustomTarget] = useState('')
+      const [source, setSource] = useState('')
+      const [busy, setBusy] = useState(false)
+      const abortRef = useRef(null)
+      const picked = TARGET_LANGS.find((item) => item.value === target)
+      const targetLabel = picked ? picked.label : customTarget.trim()
+
+      const run = async () => {
+        if (busy) return
+        if (!targetLabel) {
+          s.setError(t('targetRequired'))
+          return
+        }
+        const ac = new AbortController()
+        abortRef.current = ac
+        setBusy(true)
+        s.setError('')
+        try {
+          const res = await fetch('/dev-tools/translate', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              input: s.input,
+              target: targetLabel,
+              source: source.trim() || undefined
+            }),
+            signal: ac.signal
+          })
+          const data = await res.json().catch(() => null)
+          if (!res.ok || !data || data.ok === false) {
+            throw new Error((data && data.error) || ('HTTP ' + res.status))
+          }
+          s.setOutput(data.text == null ? '' : String(data.text))
+        } catch (e) {
+          if (e && e.name === 'AbortError') s.setError(t('translateCancelled'))
+          else s.setError(e && e.message ? e.message : String(e))
+        } finally {
+          setBusy(false)
+          abortRef.current = null
+        }
+      }
+
+      return h(ToolShell, {
+        tool, lang, t,
+        status: busy ? t('translating') : t('statusReady'),
+        extras: h('div', { className: 'dsh-dt-row' },
+          h(Select, {
+            style: { width: 176 },
+            title: t('targetLang'),
+            value: target,
+            onChange: setTarget,
+            options: TARGET_LANGS.concat([{ value: 'custom', label: t('customLang') }])
+          }),
+          target === 'custom'
+            ? h('input', {
+                className: 'dsh-dt-input',
+                style: { width: 148 },
+                value: customTarget,
+                placeholder: t('customLang'),
+                'aria-label': t('targetLang'),
+                onChange: (e) => setCustomTarget(e.target.value)
+              })
+            : null,
+          h('input', {
+            className: 'dsh-dt-input',
+            style: { width: 160 },
+            value: source,
+            placeholder: t('sourceLang'),
+            'aria-label': t('sourceLang'),
+            'data-tip': t('sourceLang'),
+            onChange: (e) => setSource(e.target.value)
+          })
+        ),
+        actions: [
+          h(Btn, { primary: true, key: 'go', disabled: busy, onClick: run }, t('translate')),
+          busy ? h(Btn, { key: 'stop', onClick: () => abortRef.current && abortRef.current.abort() }, t('cancel')) : null
+        ],
+        children: h(ToolIO, {
+          t,
+          input: s.input,
+          setInput: s.setInput,
+          output: s.output,
+          setOutput: s.setOutput,
+          error: s.error
+        })
+      })
+    }
+
     function ToolPage({ id, t, lang }) {
       const tool = TOOL_DEFS.find((x) => x.id === id)
       if (!tool) return h('div', { className: 'dsh-dt-muted' }, 'Unknown tool')
@@ -2555,6 +2702,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       if (id === 'number-base') return h(NumberBaseTool, common)
       if (id === 'query-string') return h(QueryTool, common)
       if (id === 'diff') return h(DiffTool, common)
+      if (id === 'translate') return h(TranslateTool, common)
       return h('div', { className: 'dsh-dt-muted' }, 'Unknown tool')
     }
 
@@ -2564,6 +2712,8 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       const [temps, setTemps] = useState(initial.temps || [])
       const [active, setActive] = useState(initial.active)
       const [scheme, setScheme] = useState('light')
+      // 切走的工具页保持挂载，避免翻译输入和结果被清掉
+      const [kept, setKept] = useState([])
 
       useEffect(() => {
         // 固定列表变化时，从临时列表剔除已固定项
@@ -2634,6 +2784,19 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       }, [pinned])
 
       const tempTabs = temps.filter((id) => isToolId(id) && !pinned.includes(id))
+      const alive = new Set(pinned.concat(temps))
+      const panels = kept.filter((id) => alive.has(id) && isToolId(id))
+      if (active !== MANAGE_ID && isToolId(active) && alive.has(active) && !panels.includes(active)) {
+        panels.push(active)
+      }
+      const panelKey = panels.join('\n')
+
+      useEffect(() => {
+        const next = panelKey ? panelKey.split('\n') : []
+        setKept((prev) => (
+          prev.length === next.length && prev.every((id, i) => id === next[i]) ? prev : next
+        ))
+      }, [panelKey])
 
       return h('div', { className: 'dsh-dt-root', 'data-scheme': scheme },
         h('style', null, CSS),
@@ -2697,7 +2860,14 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
         h('div', { className: 'dsh-dt-body' },
           active === MANAGE_ID
             ? h(ManagePage, { t, lang, pinned, setPinned, openTool, togglePin })
-            : h(ToolPage, { id: active, t, lang })
+            : null,
+          panels.map((id) =>
+            h('div', {
+              key: id,
+              className: 'dsh-dt-keep',
+              hidden: active !== id
+            }, h(ToolPage, { id, t, lang }))
+          )
         )
       )
     }

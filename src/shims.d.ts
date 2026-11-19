@@ -4,10 +4,36 @@ declare module '@deepseek-ai/cordis' {
       register(tool: unknown): void
     }
     effect(fn: () => void | (() => void)): void
+    get(name: string): unknown
     logger?: {
       info(...args: unknown[]): void
       warn(...args: unknown[]): void
       error(...args: unknown[]): void
+    }
+    llm: {
+      listProviders(): unknown
+      listModels(provider: string): Promise<unknown> | unknown
+      stream(options: {
+        provider: string
+        model: string
+        messages: Array<{
+          role: 'user'
+          content: Array<{ type: 'text'; text: string }>
+        }>
+        signal?: AbortSignal
+      }): AsyncIterable<unknown>
+    }
+    webServer: {
+      register(route: {
+        kind: 'exact' | 'prefix'
+        path: string
+        handler: (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void | Promise<void>
+      }): () => void
+    }
+    connection?: {
+      requestRejection(
+        request: import('node:http').IncomingMessage
+      ): number | { status?: number; statusCode?: number } | undefined | null
     }
   }
 }

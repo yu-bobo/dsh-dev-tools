@@ -28,14 +28,17 @@ dsh plugin --profile desktop add dsh-dev-tools
 - 默认 Pin：JSON、时间戳、UUID、Base64、Hash
 - 偏好保存在浏览器 `localStorage`
 
-内置工具：JSON、时间戳、UUID、Base64、URL、Hash、AES-GCM、Hex、JWT 解码、命名风格、进制转换、Query String、文本 Diff。
+内置工具：JSON、时间戳、UUID、Base64、URL、Hash、AES-GCM、Hex、JWT 解码、命名风格、进制转换、Query String、文本 Diff、翻译。
+
+翻译走宿主当前默认模型（账号登录一般是 `deepseek-account`），不另备翻译密钥，会消耗 token。侧栏与 `devtools_translate` 共用 `POST /dev-tools/translate`。单次最多 12000 字。
 
 ### Agent 工具
 
 | 工具 | 说明 |
 |------|------|
-| `devtools_list` | 列出工具与动作 |
+| `devtools_list` | 列出本地工具与动作 |
 | `devtools_run` | 执行 `tool` + `action`（如 `json`/`format`） |
+| `devtools_translate` | 用宿主模型翻译（`input` + `target`，可选 `source`） |
 
 示例：
 
@@ -44,6 +47,7 @@ devtools_run({ tool: "uuid", action: "v4", count: 3 })
 devtools_run({ tool: "hash", action: "sha256", input: "hello" })
 devtools_run({ tool: "timestamp", action: "now" })
 devtools_run({ tool: "diff", action: "compare", input: "a\\nb", inputB: "a\\nc" })
+devtools_translate({ input: "hello", target: "中文" })
 ```
 
 AES 使用 PBKDF2 + AES-256-GCM，口令仅用于当场加解密，不会上传。
