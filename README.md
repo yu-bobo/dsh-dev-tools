@@ -1,6 +1,8 @@
-# dsh-dev-tools
+# dsh-developer-tools
 
 DeepSeek Harness 侧栏开发者工具箱：JSON / 时间戳 / UUID / Base64 / Hash / AES 等，支持 **Pin 到 Tab**，并提供 Agent 工具。
+
+仓库目录仍为 `dsh-dev-tools`；npm 包名为 `dsh-developer-tools`（避免与已有包 `dsh-devtools` 冲突）。
 
 ## 安装
 
@@ -15,7 +17,7 @@ dsh plugin --profile desktop add link:F:/Private/projects/dsh-dev-tools
 或 npm / Git 发布后：
 
 ```sh
-dsh plugin --profile desktop add dsh-dev-tools
+dsh plugin --profile desktop add dsh-developer-tools
 ```
 
 安装后重启对应 profile（Desktop 重启应用，web 重启 `dsh web`）。

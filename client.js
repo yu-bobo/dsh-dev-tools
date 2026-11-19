@@ -3,7 +3,7 @@
  * Local transforms run in the page. Translation posts to the host model route.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-dev-tools',
+  id: 'dsh-developer-tools',
   factory(require) {
     const React = require('react')
     const h = React.createElement
@@ -75,7 +75,7 @@ window.__ModuleLoader__.load({
 
     const PANEL_ID = 'dev-tools'
     const NS = 'devTools'
-    const STORAGE_KEY = 'dsh-dev-tools:prefs:v1'
+    const STORAGE_KEY = 'dsh-developer-tools:prefs:v1'
     const MANAGE_ID = '__manage__'
 
     const TOOL_DEFS = [

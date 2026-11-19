@@ -15,7 +15,7 @@ export function registerTools(ctx: Context): void {
     defineTool({
       name: 'devtools_list',
       description:
-        '列出 dsh-dev-tools 可用的本地小工具与动作（JSON/时间戳/UUID/Base64/Hash/AES/Diff 等）。自然语言翻译不在此列表，请调用 devtools_translate。',
+        '列出 dsh-developer-tools 可用的本地小工具与动作（JSON/时间戳/UUID/Base64/Hash/AES/Diff 等）。自然语言翻译不在此列表，请调用 devtools_translate。',
       parameters: {},
       output: {
         schema: { type: 'string' },
@@ -34,7 +34,7 @@ export function registerTools(ctx: Context): void {
     defineTool({
       name: 'devtools_run',
       description:
-        '运行 dsh-dev-tools 中的某个本地开发者工具。tool + action 见 devtools_list；常见：json/format、timestamp/now、uuid/v4、base64/encode、hash/sha256、aes/encrypt、diff/compare。翻译请调用 devtools_translate，不要把 translate 当作这里的 tool。',
+        '运行 dsh-developer-tools 中的某个本地开发者工具。tool + action 见 devtools_list；常见：json/format、timestamp/now、uuid/v4、base64/encode、hash/sha256、aes/encrypt、diff/compare。翻译请调用 devtools_translate，不要把 translate 当作这里的 tool。',
       parameters: {
         tool: {
           type: 'string',

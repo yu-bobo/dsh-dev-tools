@@ -1,5 +1,5 @@
 {
-  "name": "dsh-dev-tools",
+  "name": "dsh-developer-tools",
   "version": "0.1.2",
   "description": "DeepSeek Harness plugin: developer utilities (JSON, timestamp, UUID, hash, AES, Base64, Diff, translate) with pinable sidebar tabs and agent tools.",
   "type": "module",
