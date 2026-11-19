@@ -20,6 +20,8 @@ window.__ModuleLoader__.load({
     const IconPinOutline = ui && ui.IconPinOutlineRegular
     const IconPinFill = ui && ui.IconPinFillRegular
     const IconSettings = ui && (ui.IconSettingsOutlineRegular || ui.IconOptionsOutlineRegular)
+    const IconFolderHost = ui && (ui.IconFolderOutlineRegular || ui.IconDocumentOutlineRegular || ui.IconAttachOutlineRegular)
+    const IconClearHost = ui && (ui.IconDismissOutlineRegular || ui.IconDeleteOutlineRegular || ui.IconEraserOutlineRegular)
 
     function IconOpenSvg(props) {
       return h('svg', {
@@ -30,6 +32,30 @@ window.__ModuleLoader__.load({
         h('path', { d: 'M7 3.5H4.2A1.2 1.2 0 0 0 3 4.7v6.6A1.2 1.2 0 0 0 4.2 12.5H7' }),
         h('path', { d: 'M7.5 8h5.5' }),
         h('path', { d: 'M10.8 5.2L13.5 8l-2.7 2.8' })
+      )
+    }
+
+    function IconFileSvg(props) {
+      if (IconFolderHost) return h(IconFolderHost, { size: 14, ...props })
+      return h('svg', {
+        width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true, ...props
+      },
+        h('path', { d: 'M3.5 5.2A1.7 1.7 0 0 1 5.2 3.5h3.1L11.5 6.7v4.1a1.7 1.7 0 0 1-1.7 1.7H5.2A1.7 1.7 0 0 1 3.5 10.8V5.2z' }),
+        h('path', { d: 'M8.2 3.5V6.7h3.2' })
+      )
+    }
+
+    function IconClearSvg(props) {
+      if (IconClearHost) return h(IconClearHost, { size: 14, ...props })
+      return h('svg', {
+        width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true, ...props
+      },
+        h('path', { d: 'M4.2 4.2l7.6 7.6' }),
+        h('path', { d: 'M11.8 4.2l-7.6 7.6' })
       )
     }
 
@@ -365,9 +391,18 @@ window.__ModuleLoader__.load({
 
       .dsh-dt-hero {
         display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 12px;
+        padding: 2px 2px 0;
+      }
+      .dsh-dt-hero-identity {
+        display: flex;
         align-items: center;
         gap: 12px;
-        padding: 2px 2px 0;
+        min-width: 0;
+        flex: 1 1 160px;
       }
       .dsh-dt-mark {
         width: 40px;
@@ -398,7 +433,7 @@ window.__ModuleLoader__.load({
       .dsh-dt-mark[data-tone="lime"] { color: #4d7c0f; background: color-mix(in srgb, #84cc16 14%, transparent); border-color: color-mix(in srgb, #84cc16 28%, transparent); }
       .dsh-dt-mark[data-tone="fuchsia"] { color: #a21caf; background: color-mix(in srgb, #d946ef 14%, transparent); border-color: color-mix(in srgb, #d946ef 28%, transparent); }
       .dsh-dt-root[data-scheme="dark"] .dsh-dt-mark { filter: saturate(1.05) brightness(1.15); }
-      .dsh-dt-hero-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .dsh-dt-hero-text { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
       .dsh-dt-hero-title {
         margin: 0;
         font-size: 16px;
@@ -417,11 +452,9 @@ window.__ModuleLoader__.load({
         flex-wrap: wrap;
         gap: 8px;
         align-items: center;
-        justify-content: space-between;
-        padding: 8px 10px;
-        border: 1px solid var(--dsh-dt-border);
-        border-radius: var(--dsh-dt-radius);
-        background: var(--dsw-alias-bg-layer-1, var(--dsw-alias-bg-base, #fff));
+        justify-content: flex-end;
+        margin-left: auto;
+        max-width: 100%;
       }
       .dsh-dt-chiprow, .dsh-dt-actions {
         display: flex;
@@ -833,12 +866,12 @@ window.__ModuleLoader__.load({
         border-color: transparent;
         box-shadow: none;
       }
-      .dsh-dt-btn[data-icon="1"] svg {
+      .dsh-dt-btn svg {
         display: block;
         flex-shrink: 0;
       }
 
-      /* 自定义 tooltip，替代浏览器原生 title */
+      /* 自定义 tooltip，替代浏览器原生 title；默认向下展开，避免顶部被 overflow 裁切 */
       [data-tip] {
         position: relative;
       }
@@ -846,7 +879,7 @@ window.__ModuleLoader__.load({
       [data-tip]::after {
         position: absolute;
         left: 50%;
-        transform: translateX(-50%) translateY(4px);
+        transform: translateX(-50%) translateY(-4px);
         opacity: 0;
         pointer-events: none;
         transition: opacity .14s var(--dsh-dt-ease), transform .14s var(--dsh-dt-ease);
@@ -854,7 +887,7 @@ window.__ModuleLoader__.load({
       }
       [data-tip]::after {
         content: attr(data-tip);
-        bottom: calc(100% + 8px);
+        top: calc(100% + 8px);
         padding: 5px 8px;
         border-radius: 6px;
         background: color-mix(in srgb, var(--dsw-alias-label-primary, #111) 92%, transparent);
@@ -868,9 +901,9 @@ window.__ModuleLoader__.load({
       }
       [data-tip]::before {
         content: '';
-        bottom: calc(100% + 2px);
+        top: calc(100% + 2px);
         border: 5px solid transparent;
-        border-top-color: color-mix(in srgb, var(--dsw-alias-label-primary, #111) 92%, transparent);
+        border-bottom-color: color-mix(in srgb, var(--dsw-alias-label-primary, #111) 92%, transparent);
       }
       [data-tip]:hover::before,
       [data-tip]:hover::after,
@@ -1724,17 +1757,17 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       const desc = lang === 'zh' ? tool.descZh : tool.descEn
       return h('div', { className: 'dsh-dt-stage', key: tool.id },
         h('div', { className: 'dsh-dt-hero' },
-          h('div', { className: 'dsh-dt-mark', 'data-tone': tool.tone || 'slate' }, tool.mark || '•'),
-          h('div', { className: 'dsh-dt-hero-text' },
-            h('h2', { className: 'dsh-dt-hero-title' }, title),
-            h('p', { className: 'dsh-dt-hero-desc' }, desc)
-          )
-        ),
-        h('div', { className: 'dsh-dt-toolbar' },
-          h('div', { className: 'dsh-dt-chiprow' }, ...(actions || [])),
-          h('div', { className: 'dsh-dt-row' },
+          h('div', { className: 'dsh-dt-hero-identity' },
+            h('div', { className: 'dsh-dt-mark', 'data-tone': tool.tone || 'slate' }, tool.mark || '•'),
+            h('div', { className: 'dsh-dt-hero-text' },
+              h('h2', { className: 'dsh-dt-hero-title' }, title),
+              h('p', { className: 'dsh-dt-hero-desc' }, desc)
+            )
+          ),
+          h('div', { className: 'dsh-dt-toolbar' },
             extras || null,
-            h('span', { className: 'dsh-dt-meta' }, status || t('statusReady'))
+            h('div', { className: 'dsh-dt-chiprow' }, ...(actions || [])),
+            status ? h('span', { className: 'dsh-dt-meta' }, status) : null
           )
         ),
         children
@@ -1766,7 +1799,11 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
               h('div', { className: 'dsh-dt-label' }, t('input')),
               h('div', { className: 'dsh-dt-actions' },
                 h('span', { className: 'dsh-dt-meta' }, t('chars').replace('{n}', String(inCount))),
-                h(Btn, { ghost: true, onClick: () => { setInput(''); setOutput('') } }, t('clear'))
+                h(Btn, {
+                  ghost: true,
+                  icon: h(IconClearSvg),
+                  onClick: () => { setInput(''); setOutput('') }
+                }, t('clear'))
               )
             ),
             h('textarea', {
@@ -2178,7 +2215,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       const pending = left !== committed.left || right !== committed.right || ignoreWs !== committed.ignoreWs
 
       const status = bothEmpty
-        ? t('statusReady')
+        ? ''
         : identical
           ? t('identical')
           : t('diffStats').replace('{a}', String(result.added)).replace('{r}', String(result.removed))
@@ -2275,10 +2312,12 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
               h(Btn, {
                 ghost: true,
                 disabled: reading,
+                icon: h(IconFileSvg),
                 onClick: () => fileRef.current && fileRef.current.click()
               }, reading ? t('readingFile') : t('pickFile')),
               h(Btn, {
                 ghost: true,
+                icon: h(IconClearSvg),
                 onClick: () => { setValue(''); setName('') }
               }, t('clear'))
             )
@@ -2332,7 +2371,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
 
       return h(ToolShell, {
         tool, lang, t,
-        status: pending ? t('statusReady') : status,
+        status: pending ? '' : status,
         actions: [
           h(Btn, {
             primary: true,
@@ -2641,7 +2680,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
 
       return h(ToolShell, {
         tool, lang, t,
-        status: busy ? t('translating') : t('statusReady'),
+        status: busy ? t('translating') : '',
         extras: h('div', { className: 'dsh-dt-row' },
           h(Select, {
             style: { width: 176 },
