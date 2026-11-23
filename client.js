@@ -73,6 +73,32 @@ window.__ModuleLoader__.load({
       return h(IconPinSvg, props)
     }
 
+    // 全部展开：双层展开三角
+    function IconExpandAllSvg(props) {
+      return h('svg', {
+        width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true, ...props
+      },
+        h('path', { d: 'M3 3.5h10' }),
+        h('path', { d: 'M5 7.5l3 3 3-3' }),
+        h('path', { d: 'M5 11.5l3 3 3-3' })
+      )
+    }
+
+    // 全部折叠：双层收起三角
+    function IconCollapseAllSvg(props) {
+      return h('svg', {
+        width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true, ...props
+      },
+        h('path', { d: 'M3 12.5h10' }),
+        h('path', { d: 'M5 8.5l3-3 3 3' }),
+        h('path', { d: 'M5 4.5l3-3 3 3' })
+      )
+    }
+
     const PANEL_ID = 'dev-tools'
     const NS = 'devTools'
     const STORAGE_KEY = 'dsh-developer-tools:prefs:v1'
@@ -170,7 +196,11 @@ window.__ModuleLoader__.load({
         targetLang: 'Target language',
         sourceLang: 'Source (optional)',
         customLang: 'Custom',
-        targetRequired: 'Enter a target language'
+        targetRequired: 'Enter a target language',
+        expandAll: 'Expand all',
+        collapseAll: 'Collapse all',
+        jsonKeys: '{n} keys',
+        jsonItems: '{n} items'
       },
       zh: {
         panelLabel: '开发工具',
@@ -244,7 +274,11 @@ window.__ModuleLoader__.load({
         targetLang: '目标语言',
         sourceLang: '源语言（可选）',
         customLang: '自定义',
-        targetRequired: '请填写目标语言'
+        targetRequired: '请填写目标语言',
+        expandAll: '全部展开',
+        collapseAll: '全部折叠',
+        jsonKeys: '{n} 个键',
+        jsonItems: '{n} 项'
       }
     }
 
@@ -1155,6 +1189,95 @@ window.__ModuleLoader__.load({
         opacity: 0;
         pointer-events: none;
       }
+
+      .dsh-dt-json-view {
+        flex: 1;
+        min-height: 180px;
+        overflow: auto;
+        border: 1px solid transparent;
+        border-radius: var(--dsh-dt-radius-sm);
+        background: var(--dsh-dt-soft);
+        font-family: var(--dsh-dt-mono);
+        font-size: 12.5px;
+        line-height: 1.55;
+        padding: 10px 12px;
+      }
+      .dsh-dt-json-line {
+        display: flex;
+        align-items: flex-start;
+        gap: 2px;
+        min-height: 20px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      .dsh-dt-json-children {
+        margin-left: 14px;
+        padding-left: 10px;
+        border-left: 1px solid var(--dsh-dt-border);
+      }
+      .dsh-dt-json-toggle {
+        appearance: none;
+        flex: 0 0 16px;
+        width: 16px;
+        height: 18px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--dsw-alias-label-secondary);
+        cursor: pointer;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 4px;
+        transition: color .14s var(--dsh-dt-ease), background .14s var(--dsh-dt-ease);
+      }
+      .dsh-dt-json-toggle:hover {
+        color: var(--dsw-alias-label-primary);
+        background: var(--dsh-dt-soft);
+      }
+      .dsh-dt-json-toggle::before {
+        content: '';
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 4px 0 4px 6px;
+        border-color: transparent transparent transparent currentColor;
+        transform: rotate(0deg);
+        transition: transform .14s var(--dsh-dt-ease);
+      }
+      .dsh-dt-json-toggle[aria-expanded="true"]::before {
+        transform: rotate(90deg);
+      }
+      .dsh-dt-json-toggle-spacer {
+        flex: 0 0 16px;
+        width: 16px;
+      }
+      .dsh-dt-json-key {
+        font-weight: 650;
+      }
+      .dsh-dt-json-key[data-depth="0"] { color: #1d4ed8; }
+      .dsh-dt-json-key[data-depth="1"] { color: #0e7490; }
+      .dsh-dt-json-key[data-depth="2"] { color: #7e22ce; }
+      .dsh-dt-json-key[data-depth="3"] { color: #c2410c; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-key[data-depth="0"] { color: #93c5fd; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-key[data-depth="1"] { color: #67e8f9; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-key[data-depth="2"] { color: #d8b4fe; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-key[data-depth="3"] { color: #fdba74; }
+      .dsh-dt-json-colon,
+      .dsh-dt-json-comma,
+      .dsh-dt-json-bracket,
+      .dsh-dt-json-preview {
+        color: var(--dsw-alias-label-secondary);
+      }
+      .dsh-dt-json-val[data-kind="string"] { color: #15803d; }
+      .dsh-dt-json-val[data-kind="number"] { color: #c2410c; }
+      .dsh-dt-json-val[data-kind="boolean"] { color: #7e22ce; }
+      .dsh-dt-json-val[data-kind="null"] { color: #64748b; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-val[data-kind="string"] { color: #86efac; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-val[data-kind="number"] { color: #fdba74; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-val[data-kind="boolean"] { color: #d8b4fe; }
+      .dsh-dt-root[data-scheme="dark"] .dsh-dt-json-val[data-kind="null"] { color: #94a3b8; }
     `
 
     function isToolId(id) {
@@ -1890,16 +2013,278 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       return { input, setInput, output, setOutput, error, setError, run }
     }
 
+    function tryParseJsonTree(text) {
+      if (text == null || !String(text).trim()) return null
+      try {
+        const value = JSON.parse(text)
+        if (value !== null && typeof value === 'object') return value
+        return null
+      } catch {
+        return null
+      }
+    }
+
+    // 格式化结果含换行；压缩/校验文案走 textarea
+    function shouldShowJsonTree(text) {
+      return !!tryParseJsonTree(text) && String(text).includes('\n')
+    }
+
+    function collectJsonPaths(value, path = '$', out = []) {
+      if (value === null || typeof value !== 'object') return out
+      out.push(path)
+      if (Array.isArray(value)) {
+        for (let i = 0; i < value.length; i++) collectJsonPaths(value[i], path + '.' + i, out)
+      } else {
+        const keys = Object.keys(value)
+        for (let i = 0; i < keys.length; i++) {
+          const key = keys[i]
+          collectJsonPaths(value[key], path + '.' + key, out)
+        }
+      }
+      return out
+    }
+
+    function jsonLeafText(value) {
+      if (value === null) return 'null'
+      if (typeof value === 'string') return JSON.stringify(value)
+      return String(value)
+    }
+
+    function jsonLeafKind(value) {
+      if (value === null) return 'null'
+      if (typeof value === 'string') return 'string'
+      if (typeof value === 'number') return 'number'
+      if (typeof value === 'boolean') return 'boolean'
+      return 'null'
+    }
+
+    /**
+     * JSON 树节点：可折叠的对象/数组与着色叶子值
+     */
+    function JsonNode({ name, value, path, depth, collapsed, toggle, t, trailingComma }) {
+      const isArray = Array.isArray(value)
+      const isObject = value !== null && typeof value === 'object'
+      const isContainer = isObject
+      const open = isContainer && !collapsed.has(path)
+      const keyDepth = String(depth % 4)
+      const comma = trailingComma ? h('span', { className: 'dsh-dt-json-comma' }, ',') : null
+      const keyEl = name != null
+        ? h(React.Fragment, null,
+          h('span', { className: 'dsh-dt-json-key', 'data-depth': keyDepth }, JSON.stringify(String(name))),
+          h('span', { className: 'dsh-dt-json-colon' }, ': ')
+        )
+        : null
+
+      if (!isContainer) {
+        return h('div', { className: 'dsh-dt-json-line' },
+          h('span', { className: 'dsh-dt-json-toggle-spacer' }),
+          keyEl,
+          h('span', { className: 'dsh-dt-json-val', 'data-kind': jsonLeafKind(value) }, jsonLeafText(value)),
+          comma
+        )
+      }
+
+      const entries = isArray
+        ? value.map((item, i) => ({ name: null, value: item, path: path + '.' + i }))
+        : Object.keys(value).map((key) => ({ name: key, value: value[key], path: path + '.' + key }))
+      const size = entries.length
+      const openBracket = isArray ? '[' : '{'
+      const closeBracket = isArray ? ']' : '}'
+      const preview = isArray
+        ? t('jsonItems').replace('{n}', String(size))
+        : t('jsonKeys').replace('{n}', String(size))
+
+      return h(React.Fragment, null,
+        h('div', { className: 'dsh-dt-json-line' },
+          h('button', {
+            type: 'button',
+            className: 'dsh-dt-json-toggle',
+            'aria-expanded': open ? 'true' : 'false',
+            onClick: () => toggle(path)
+          }),
+          keyEl,
+          open
+            ? h('span', { className: 'dsh-dt-json-bracket' }, openBracket)
+            : h(React.Fragment, null,
+              h('span', { className: 'dsh-dt-json-bracket' }, openBracket + ' '),
+              h('span', { className: 'dsh-dt-json-preview' }, preview),
+              h('span', { className: 'dsh-dt-json-bracket' }, ' ' + closeBracket),
+              comma
+            )
+        ),
+        open
+          ? h(React.Fragment, null,
+            size
+              ? h('div', { className: 'dsh-dt-json-children' },
+                entries.map((entry, i) =>
+                  h(JsonNode, {
+                    key: entry.path,
+                    name: entry.name,
+                    value: entry.value,
+                    path: entry.path,
+                    depth: depth + 1,
+                    collapsed,
+                    toggle,
+                    t,
+                    trailingComma: i < size - 1
+                  })
+                )
+              )
+              : null,
+            h('div', { className: 'dsh-dt-json-line' },
+              h('span', { className: 'dsh-dt-json-toggle-spacer' }),
+              h('span', { className: 'dsh-dt-json-bracket' }, closeBracket),
+              comma
+            )
+          )
+          : null
+      )
+    }
+
+    /**
+     * JSON 格式化树视图：语法着色 + 对象/数组折叠
+     */
+    function JsonTreeView({ data, collapsed, toggle, t }) {
+      return h('div', { className: 'dsh-dt-json-view' },
+        h(JsonNode, {
+          name: null,
+          value: data,
+          path: '$',
+          depth: 0,
+          collapsed,
+          toggle,
+          t,
+          trailingComma: false
+        })
+      )
+    }
+
     function JsonTool({ t, lang, tool }) {
       const s = useToolState(tool.id)
+      const [collapsed, setCollapsed] = useState(() => new Set())
+      const [copied, setCopied] = useState(false)
+      const treeData = useMemo(
+        () => (shouldShowJsonTree(s.output) ? tryParseJsonTree(s.output) : null),
+        [s.output]
+      )
+
+      useEffect(() => {
+        setCollapsed(new Set())
+      }, [s.output])
+
+      const togglePath = useCallback((path) => {
+        setCollapsed((prev) => {
+          const next = new Set(prev)
+          if (next.has(path)) next.delete(path)
+          else next.add(path)
+          return next
+        })
+      }, [])
+
+      const allExpanded = collapsed.size === 0
+      const toggleExpandAll = useCallback(() => {
+        if (!treeData) return
+        if (collapsed.size === 0) setCollapsed(new Set(collectJsonPaths(treeData)))
+        else setCollapsed(new Set())
+      }, [treeData, collapsed])
+
+      const copy = async (text) => {
+        try {
+          await navigator.clipboard.writeText(text || '')
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1200)
+          return true
+        } catch {
+          return false
+        }
+      }
+
+      const swap = () => {
+        s.setInput(s.output || '')
+        s.setOutput(s.input || '')
+      }
+
+      const clearAll = () => {
+        s.setInput('')
+        s.setOutput('')
+        setCollapsed(new Set())
+      }
+
+      const inCount = (s.input || '').length
+      const outCount = (s.output || '').length
+
       return h(ToolShell, {
         tool, lang, t,
         actions: [
-          h(Btn, { primary: true, key: 'f', onClick: () => s.run(() => JSON.stringify(JSON.parse(s.input), null, 2)) }, t('format')),
-          h(Btn, { key: 'm', onClick: () => s.run(() => JSON.stringify(JSON.parse(s.input))) }, t('minify')),
-          h(Btn, { key: 'v', onClick: () => s.run(() => { JSON.parse(s.input); return t('valid') }) }, t('validate'))
+          h(Btn, {
+            primary: true, key: 'f',
+            onClick: () => s.run(() => JSON.stringify(JSON.parse(s.input), null, 2))
+          }, t('format')),
+          h(Btn, {
+            key: 'm',
+            onClick: () => s.run(() => JSON.stringify(JSON.parse(s.input)))
+          }, t('minify')),
+          h(Btn, {
+            key: 'v',
+            onClick: () => s.run(() => { JSON.parse(s.input); return t('valid') })
+          }, t('validate'))
         ],
-        children: h(ToolIO, { t, input: s.input, setInput: s.setInput, output: s.output, setOutput: s.setOutput, error: s.error })
+        children: h(React.Fragment, null,
+          h('div', { className: 'dsh-dt-split' },
+            h('div', { className: 'dsh-dt-pane' },
+              h('div', { className: 'dsh-dt-pane-head' },
+                h('div', { className: 'dsh-dt-label' }, t('input')),
+                h('div', { className: 'dsh-dt-actions' },
+                  h('span', { className: 'dsh-dt-meta' }, t('chars').replace('{n}', String(inCount))),
+                  h(Btn, {
+                    ghost: true,
+                    icon: h(IconClearSvg),
+                    onClick: clearAll
+                  }, t('clear'))
+                )
+              ),
+              h('textarea', {
+                className: 'dsh-dt-textarea',
+                value: s.input,
+                onChange: (e) => s.setInput(e.target.value),
+                spellCheck: false,
+                placeholder: '…'
+              })
+            ),
+            h('div', { className: 'dsh-dt-pane' },
+              h('div', { className: 'dsh-dt-pane-head' },
+                h('div', { className: 'dsh-dt-label' }, t('output')),
+                h('div', { className: 'dsh-dt-actions' },
+                  h('span', { className: 'dsh-dt-meta' }, t('chars').replace('{n}', String(outCount))),
+                  treeData
+                    ? h(Btn, {
+                      ghost: true, key: 'toggle-fold',
+                      title: allExpanded ? t('collapseAll') : t('expandAll'),
+                      onClick: toggleExpandAll
+                    }, allExpanded ? h(IconCollapseAllSvg) : h(IconExpandAllSvg))
+                    : null,
+                  h(Btn, { ghost: true, title: t('swap'), onClick: swap }, '⇄'),
+                  h(Btn, {
+                    ghost: true,
+                    icon: IconCopy ? h(IconCopy) : null,
+                    onClick: async () => { await copy(s.output) }
+                  }, copied ? t('copied') : t('copy'))
+                )
+              ),
+              treeData
+                ? h(JsonTreeView, { data: treeData, collapsed, toggle: togglePath, t })
+                : h('textarea', {
+                  className: 'dsh-dt-textarea',
+                  'data-out': '1',
+                  value: s.output,
+                  readOnly: true,
+                  spellCheck: false,
+                  placeholder: '—'
+                })
+            )
+          ),
+          s.error ? h('div', { className: 'dsh-dt-err' }, s.error) : null
+        )
       })
     }
 
