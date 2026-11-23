@@ -1187,6 +1187,27 @@ window.__ModuleLoader__.load({
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
     }
 
+    // 工具输入态：模块级内存，切走 DSH 侧栏卸载 React 后仍可恢复
+    const workspaceMem = Object.create(null)
+
+    function readToolField(toolId, key, fallback) {
+      const tool = workspaceMem[toolId]
+      if (!tool || typeof tool !== 'object') return fallback
+      if (!(key in tool)) return fallback
+      const v = tool[key]
+      if (typeof fallback === 'string') return typeof v === 'string' ? v : fallback
+      if (typeof fallback === 'number') return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+      if (typeof fallback === 'boolean') return typeof v === 'boolean' ? v : fallback
+      return v == null ? fallback : v
+    }
+
+    function writeToolFields(toolId, patch) {
+      const prev = workspaceMem[toolId] && typeof workspaceMem[toolId] === 'object'
+        ? workspaceMem[toolId]
+        : {}
+      workspaceMem[toolId] = Object.assign({}, prev, patch)
+    }
+
     function uuidV4() {
       if (crypto.randomUUID) return crypto.randomUUID()
       const buf = new Uint8Array(16)
@@ -1841,9 +1862,21 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
       )
     }
 
-    function useToolState() {
-      const [input, setInput] = useState('')
-      const [output, setOutput] = useState('')
+    function useMemState(toolId, key, defaultValue) {
+      const [value, setValue] = useState(() => readToolField(toolId, key, defaultValue))
+      const setPersisted = useCallback((next) => {
+        setValue((prev) => {
+          const resolved = typeof next === 'function' ? next(prev) : next
+          writeToolFields(toolId, { [key]: resolved })
+          return resolved
+        })
+      }, [toolId, key])
+      return [value, setPersisted]
+    }
+
+    function useToolState(toolId) {
+      const [input, setInput] = useMemState(toolId, 'input', '')
+      const [output, setOutput] = useMemState(toolId, 'output', '')
       const [error, setError] = useState('')
       const run = async (fn) => {
         setError('')
@@ -1858,7 +1891,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function JsonTool({ t, lang, tool }) {
-      const s = useToolState()
+      const s = useToolState(tool.id)
       return h(ToolShell, {
         tool, lang, t,
         actions: [
@@ -1871,8 +1904,8 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function TimestampTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [unit, setUnit] = useState('s')
+      const s = useToolState(tool.id)
+      const [unit, setUnit] = useMemState(tool.id, 'unit', 's')
       return h(ToolShell, {
         tool, lang, t,
         extras: h(Select, {
@@ -1930,8 +1963,8 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function UuidTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [count, setCount] = useState(5)
+      const s = useToolState(tool.id)
+      const [count, setCount] = useMemState(tool.id, 'count', 5)
       return h(ToolShell, {
         tool, lang, t,
         extras: h('input', {
@@ -1952,7 +1985,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function CodecTool({ t, lang, tool, mode }) {
-      const s = useToolState()
+      const s = useToolState(tool.id)
       return h(ToolShell, {
         tool, lang, t,
         actions: [
@@ -1982,9 +2015,9 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function HashTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [algo, setAlgo] = useState('sha256')
-      const [key, setKey] = useState('')
+      const s = useToolState(tool.id)
+      const [algo, setAlgo] = useMemState(tool.id, 'algo', 'sha256')
+      const [key, setKey] = useMemState(tool.id, 'key', '')
       return h(ToolShell, {
         tool, lang, t,
         extras: h('div', { className: 'dsh-dt-row' },
@@ -2029,8 +2062,8 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function AesTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [key, setKey] = useState('')
+      const s = useToolState(tool.id)
+      const [key, setKey] = useMemState(tool.id, 'key', '')
       return h(ToolShell, {
         tool, lang, t,
         extras: h('input', {
@@ -2061,7 +2094,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function JwtTool({ t, lang, tool }) {
-      const s = useToolState()
+      const s = useToolState(tool.id)
       return h(ToolShell, {
         tool, lang, t,
         actions: [h(Btn, { primary: true, key: 'd', onClick: () => s.run(() => decodeJwt(s.input)) }, t('decode'))],
@@ -2070,7 +2103,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function CaseTool({ t, lang, tool }) {
-      const s = useToolState()
+      const s = useToolState(tool.id)
       const act = (fn) => () => s.run(() => fn(s.input))
       return h(ToolShell, {
         tool, lang, t,
@@ -2087,9 +2120,9 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function NumberBaseTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [fromBase, setFromBase] = useState(10)
-      const [toBase, setToBase] = useState(16)
+      const s = useToolState(tool.id)
+      const [fromBase, setFromBase] = useMemState(tool.id, 'fromBase', 10)
+      const [toBase, setToBase] = useMemState(tool.id, 'toBase', 16)
       return h(ToolShell, {
         tool, lang, t,
         extras: h('div', { className: 'dsh-dt-row' },
@@ -2118,7 +2151,7 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
     }
 
     function QueryTool({ t, lang, tool }) {
-      const s = useToolState()
+      const s = useToolState(tool.id)
       return h(ToolShell, {
         tool, lang, t,
         actions: [
@@ -2160,17 +2193,21 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
      * 文本 Diff：双栏输入/选文件，实时行级着色对比
      */
     function DiffTool({ t, lang, tool }) {
-      const [left, setLeft] = useState('')
-      const [right, setRight] = useState('')
-      const [leftName, setLeftName] = useState('')
-      const [rightName, setRightName] = useState('')
+      const [left, setLeft] = useMemState(tool.id, 'left', '')
+      const [right, setRight] = useMemState(tool.id, 'right', '')
+      const [leftName, setLeftName] = useMemState(tool.id, 'leftName', '')
+      const [rightName, setRightName] = useMemState(tool.id, 'rightName', '')
       const [leftReading, setLeftReading] = useState(false)
       const [rightReading, setRightReading] = useState(false)
-      const [ignoreWs, setIgnoreWs] = useState(false)
+      const [ignoreWs, setIgnoreWs] = useMemState(tool.id, 'ignoreWs', false)
       const [expanded, setExpanded] = useState({})
       const [copied, setCopied] = useState(false)
       // 已提交参与对比的文本快照（debounce / 手动对比后更新）
-      const [committed, setCommitted] = useState({ left: '', right: '', ignoreWs: false })
+      const [committed, setCommitted] = useState(() => ({
+        left: readToolField(tool.id, 'left', ''),
+        right: readToolField(tool.id, 'right', ''),
+        ignoreWs: readToolField(tool.id, 'ignoreWs', false)
+      }))
       const leftFileRef = useRef(null)
       const rightFileRef = useRef(null)
       const debounceRef = useRef(null)
@@ -2634,10 +2671,10 @@ var foldDiffLines = __DSH_DT_DIFF__.foldDiffLines;
      * 用宿主模型翻译文本
      */
     function TranslateTool({ t, lang, tool }) {
-      const s = useToolState()
-      const [target, setTarget] = useState(lang === 'en' ? 'zh' : 'en')
-      const [customTarget, setCustomTarget] = useState('')
-      const [source, setSource] = useState('')
+      const s = useToolState(tool.id)
+      const [target, setTarget] = useMemState(tool.id, 'target', lang === 'en' ? 'zh' : 'en')
+      const [customTarget, setCustomTarget] = useMemState(tool.id, 'customTarget', '')
+      const [source, setSource] = useMemState(tool.id, 'source', '')
       const [busy, setBusy] = useState(false)
       const abortRef = useRef(null)
       const picked = TARGET_LANGS.find((item) => item.value === target)
